@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Final Fix</title>
+    <title>Memorama AR - Smart UX</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -16,37 +16,63 @@
         #input_video { display: none; }
         #output_canvas {
             position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-            object-fit: cover; transform: scaleX(-1); /* EL CSS HACE EL EFECTO ESPEJO */
+            object-fit: cover; transform: scaleX(-1);
         }
         
         /* UI */
         .menu, .victory, .loading {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 30; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
-            text-align: center; padding: 20px; transition: opacity 0.5s;
+            z-index: 30; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+            text-align: center; padding: 10px; transition: opacity 0.5s;
+            overflow-y: auto;
         }
         .hidden { display: none !important; opacity: 0; pointer-events: none; }
         
-        h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #FFD700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+        h1 { font-size: 2.2rem; margin-bottom: 0.5rem; color: #FFD700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
         
         .login-container {
-            background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2); width: 100%; max-width: 400px; margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2); width: 90%; max-width: 350px; margin-bottom: 15px;
         }
-        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group { margin-bottom: 10px; text-align: left; }
         .input-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #aaa; }
         .login-input {
-            width: 100%; padding: 12px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.4); color: white; font-size: 1.1rem; outline: none; text-align: center;
+            width: 100%; padding: 10px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.4); color: white; font-size: 1rem; outline: none; text-align: center;
         }
         .login-input:focus { border-color: #00e5ff; background: rgba(0, 0, 0, 0.6); }
 
+        /* SECCIÓN DE NIVELES */
+        .level-selector {
+            display: flex; gap: 8px; margin-bottom: 5px;
+            background: rgba(0,0,0,0.3); padding: 5px; border-radius: 50px;
+        }
+        .level-btn {
+            background: transparent; color: #aaa; border: 2px solid transparent;
+            padding: 8px 12px; border-radius: 20px; font-weight: bold; cursor: pointer;
+            transition: all 0.3s; font-size: 0.9rem;
+        }
+        .level-btn.selected {
+            background: #FFD700; color: #000; box-shadow: 0 0 10px #FFD700;
+        }
+        
+        /* ESTILO PARA BOTONES DESHABILITADOS EN MÓVIL */
+        .level-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        .mobile-warning {
+            font-size: 0.8rem; color: #ff6666; margin-bottom: 15px; height: 1.2rem;
+        }
+
+        /* BOTONES CATEGORÍA */
         .grid-btn {
             background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border: none;
-            padding: 15px 30px; margin: 10px; border-radius: 50px; font-size: 1.1rem; font-weight: bold;
+            padding: 12px 25px; margin: 8px; border-radius: 50px; font-size: 1rem; font-weight: bold;
             cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(0,114,255,0.4);
-            min-width: 140px; text-transform: uppercase; letter-spacing: 1px;
+            min-width: 120px; text-transform: uppercase; letter-spacing: 1px;
         }
         .grid-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,114,255,0.6); }
         .grid-btn:active { transform: scale(0.95); }
@@ -58,9 +84,8 @@
             z-index: 20; pointer-events: none;
         }
         .player-card {
-            background: rgba(20, 20, 20, 0.8); padding: 8px 15px; border-radius: 15px;
-            border: 2px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            min-width: 100px;
+            background: rgba(20, 20, 20, 0.8); padding: 8px 12px; border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.1); transition: all 0.4s; min-width: 90px;
         }
         .player-card.active {
             border-color: #00FF00; background: rgba(0, 50, 0, 0.8);
@@ -77,12 +102,12 @@
             width: 100%; max-width: 500px; border-collapse: collapse; margin: 20px 0;
             background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden;
         }
-        .summary-table th, .summary-table td { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .summary-table th, .summary-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         .summary-table th { background: rgba(0, 114, 255, 0.3); color: white; }
         
         .back-btn {
             position: absolute; bottom: 20px; right: 20px; z-index: 25;
-            background: rgba(255, 50, 50, 0.9); color: white; padding: 12px 25px; border-radius: 30px;
+            background: rgba(255, 50, 50, 0.9); color: white; padding: 10px 20px; border-radius: 30px;
             border: none; font-weight: bold; cursor: pointer; display: none; pointer-events: auto;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
@@ -98,7 +123,8 @@
 
     <div class="container">
         <div id="menuScreen" class="menu">
-            <h1>👥 Memorama Pro</h1>
+            <h1>👥 Memorama AR</h1>
+            
             <div class="login-container">
                 <div class="input-group">
                     <label>Jugador 1</label>
@@ -109,7 +135,16 @@
                     <input type="text" id="p2Input" class="login-input" placeholder="Nombre" value="Jugador 2">
                 </div>
             </div>
-            <p style="margin-bottom:15px; color:#ccc;">Selecciona Categoría:</p>
+
+            <p style="margin-bottom:5px; color:#aaa; font-size:0.9rem;">Dificultad:</p>
+            <div class="level-selector">
+                <button id="btnEasy" class="level-btn selected" onclick="selectLevel('easy', this)">Fácil (12)</button>
+                <button id="btnMedium" class="level-btn" onclick="selectLevel('medium', this)">Medio (20)</button>
+                <button id="btnHard" class="level-btn" onclick="selectLevel('hard', this)">Difícil (30)</button>
+            </div>
+            <div id="mobileWarning" class="mobile-warning"></div>
+
+            <p style="margin-bottom:10px; color:#ccc;">Selecciona Categoría:</p>
             <div>
                 <button class="grid-btn" onclick="startGame('animals')">🐶 Animales</button>
                 <button class="grid-btn" onclick="startGame('fruits')">🍎 Frutas</button>
@@ -119,20 +154,20 @@
 
         <div id="gameHUD" class="hud hidden">
             <div id="p1Card" class="player-card active">
-                <div id="p1NameDisplay" style="font-weight:bold; font-size:1rem; margin-bottom:5px;">J1</div>
+                <div id="p1NameDisplay" style="font-weight:bold; font-size:0.9rem; margin-bottom:5px;">J1</div>
                 <div style="color:#00e5ff;">⭐ <span id="p1Score">0</span></div>
                 <div style="font-size:0.8rem; color:#ff6666;">❌ <span id="p1Errors">0</span></div>
             </div>
             <div class="timer-box" id="timerDisplay">00:00</div>
             <div id="p2Card" class="player-card">
-                <div id="p2NameDisplay" style="font-weight:bold; font-size:1rem; margin-bottom:5px;">J2</div>
+                <div id="p2NameDisplay" style="font-weight:bold; font-size:0.9rem; margin-bottom:5px;">J2</div>
                 <div style="color:#00e5ff;">⭐ <span id="p2Score">0</span></div>
                 <div style="font-size:0.8rem; color:#ff6666;">❌ <span id="p2Errors">0</span></div>
             </div>
         </div>
 
         <div id="loadingMsg" class="loading hidden">
-            <h2>📷 Iniciando cámara...</h2>
+            <h2>📷 Iniciando...</h2>
         </div>
 
         <div id="victoryScreen" class="victory hidden">
@@ -146,7 +181,7 @@
                     <tr><td id="sumP2Name">J2</td><td id="sumP2Score">0</td><td id="sumP2Errors">0</td></tr>
                 </tbody>
             </table>
-            <p>Tiempo: <span id="sumTime" style="font-weight:bold;">00:00</span></p>
+            <p>Tiempo Total: <span id="sumTime" style="font-weight:bold;">00:00</span></p>
             <div style="margin-top:20px;">
                 <button class="grid-btn" onclick="resetGame()">🔄 Reintentar</button>
                 <button class="grid-btn" onclick="backToMenu()">🏠 Menú</button>
@@ -168,19 +203,41 @@
             animals: [
                 { emoji: '🐶', name: 'Perro' }, { emoji: '🐱', name: 'Gato' },
                 { emoji: '🐭', name: 'Ratón' }, { emoji: '🐰', name: 'Conejo' },
-                { emoji: '🦊', name: 'Zorro' }, { emoji: '🐻', name: 'Oso' }
+                { emoji: '🦊', name: 'Zorro' }, { emoji: '🐻', name: 'Oso' },
+                { emoji: '🐼', name: 'Panda' }, { emoji: '🐨', name: 'Koala' },
+                { emoji: '🦁', name: 'León' }, { emoji: '🐯', name: 'Tigre' },
+                { emoji: '🐮', name: 'Vaca' }, { emoji: '🐷', name: 'Cerdito' },
+                { emoji: '🐸', name: 'Rana' }, { emoji: '🐵', name: 'Mono' },
+                { emoji: '🐔', name: 'Gallina' }
             ],
             fruits: [
                 { emoji: '🍎', name: 'Manzana' }, { emoji: '🍌', name: 'Plátano' },
                 { emoji: '🍇', name: 'Uvas' }, { emoji: '🍉', name: 'Sandía' },
-                { emoji: '🍓', name: 'Fresa' }, { emoji: '🍒', name: 'Cereza' }
+                { emoji: '🍓', name: 'Fresa' }, { emoji: '🍒', name: 'Cereza' },
+                { emoji: '🍍', name: 'Piña' }, { emoji: '🥝', name: 'Kiwi' },
+                { emoji: '🍋', name: 'Limón' }, { emoji: '🍑', name: 'Durazno' },
+                { emoji: '🥑', name: 'Aguacate' }, { emoji: '🥭', name: 'Mango' },
+                { emoji: '🥥', name: 'Coco' }, { emoji: '🍐', name: 'Pera' },
+                { emoji: '🍊', name: 'Naranja' }
             ],
             vehicles: [
                 { emoji: '🚗', name: 'Coche' }, { emoji: '🚓', name: 'Policía' },
                 { emoji: '🚀', name: 'Cohete' }, { emoji: '🚁', name: 'Helicóptero' },
-                { emoji: '🚂', name: 'Tren' }, { emoji: '🚲', name: 'Bicicleta' }
+                { emoji: '🚂', name: 'Tren' }, { emoji: '🚲', name: 'Bicicleta' },
+                { emoji: '🚌', name: 'Autobús' }, { emoji: '🚑', name: 'Ambulancia' },
+                { emoji: '🚒', name: 'Bomberos' }, { emoji: '🚜', name: 'Tractor' },
+                { emoji: '🏍️', name: 'Moto' }, { emoji: '🛴', name: 'Patín' },
+                { emoji: '🚤', name: 'Lancha' }, { emoji: '✈️', name: 'Avión' },
+                { emoji: '🚚', name: 'Camión' }
             ]
         };
+
+        const levelConfig = {
+            easy: 6,    
+            medium: 10, 
+            hard: 15    
+        };
+        let currentLevel = 'easy';
 
         let cards = [];
         let flippedCards = [];
@@ -196,9 +253,8 @@
         let wasPinching = false; 
         let pinchCooldown = 0;   
 
-        // --- SISTEMA DE SONIDO ---
+        // --- SONIDOS ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
@@ -208,29 +264,24 @@
             const now = audioCtx.currentTime;
 
             if (type === 'flip') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, now);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
                 osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-                gainNode.gain.setValueAtTime(0.3, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now);
-                osc.stop(now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
             } else if (type === 'match') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(600, now);
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now);
                 osc.frequency.setValueAtTime(1200, now + 0.1);
-                gainNode.gain.setValueAtTime(0.3, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now);
-                osc.stop(now + 0.5);
+                gainNode.gain.setValueAtTime(0.3, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
             } else if (type === 'error') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
                 osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-                gainNode.gain.setValueAtTime(0.2, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
+                gainNode.gain.setValueAtTime(0.2, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
             }
         }
 
@@ -238,19 +289,59 @@
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'es-ES';
-                u.rate = 1.1; 
+                u.lang = 'es-ES'; u.rate = 1.1; 
                 window.speechSynthesis.speak(u);
             }
         }
 
-        function resizeCanvas() {
+        // --- DETECCIÓN DE PANTALLA Y RESTRICCIONES ---
+        function checkScreenConstraints() {
             canvasElement.width = window.innerWidth;
             canvasElement.height = window.innerHeight;
             if(gameActive) createGrid(); 
+
+            // Lógica de restricción (Mobile < 800px)
+            const isSmallScreen = window.innerWidth < 800;
+            const btnMed = document.getElementById('btnMedium');
+            const btnHard = document.getElementById('btnHard');
+            const warningText = document.getElementById('mobileWarning');
+
+            if (isSmallScreen) {
+                // Si la pantalla es pequeña, forzamos fácil
+                if (currentLevel !== 'easy') {
+                    selectLevel('easy', document.getElementById('btnEasy'));
+                }
+                
+                btnMed.disabled = true;
+                btnMed.innerText = "🔒 Medio";
+                
+                btnHard.disabled = true;
+                btnHard.innerText = "🔒 Difícil";
+                
+                warningText.innerText = "⚠️ Niveles altos solo disponibles en PC/Tablet";
+            } else {
+                // Si es pantalla grande, habilitamos
+                btnMed.disabled = false;
+                btnMed.innerText = "Medio (20)";
+                
+                btnHard.disabled = false;
+                btnHard.innerText = "Difícil (30)";
+                
+                warningText.innerText = "";
+            }
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', checkScreenConstraints);
+        // Ejecutar al inicio
+        window.addEventListener('load', checkScreenConstraints);
+
+
+        function selectLevel(level, btnElement) {
+            if (btnElement.disabled) return; // Seguridad extra
+            playSound('click');
+            currentLevel = level;
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('selected'));
+            btnElement.classList.add('selected');
+        }
 
         function startGame(category) {
             const name1 = document.getElementById('p1Input').value.trim() || "Jugador 1";
@@ -268,7 +359,9 @@
             if (!videoElement.srcObject) startCamera();
             else document.getElementById('loadingMsg').classList.add('hidden');
 
-            const items = categories[category];
+            const numPairs = levelConfig[currentLevel];
+            const items = categories[category].slice(0, numPairs);
+            
             let deck = [...items, ...items]; 
             deck.sort(() => Math.random() - 0.5);
 
@@ -282,10 +375,8 @@
                 id: index,
                 emoji: item.emoji,
                 name: item.name,
-                isFlipped: false,
-                isMatched: false,
-                x: 0, y: 0, w: 0, h: 0,
-                scale: 1,
+                isFlipped: false, isMatched: false,
+                x: 0, y: 0, w: 0, h: 0, scale: 1,
                 floatOffset: Math.random() * Math.PI * 2
             }));
 
@@ -309,11 +400,9 @@
             const p1Card = document.getElementById('p1Card');
             const p2Card = document.getElementById('p2Card');
             if (currentPlayerIndex === 0) {
-                p1Card.classList.add('active');
-                p2Card.classList.remove('active');
+                p1Card.classList.add('active'); p2Card.classList.remove('active');
             } else {
-                p1Card.classList.remove('active');
-                p2Card.classList.add('active');
+                p1Card.classList.remove('active'); p2Card.classList.add('active');
             }
         }
 
@@ -326,16 +415,23 @@
 
         function createGrid() {
             const isPortrait = window.innerHeight > window.innerWidth;
-            const cols = isPortrait ? 3 : 4;
-            const rows = Math.ceil(cards.length / cols);
             const isMobile = window.innerWidth < 600;
+            const totalCards = cards.length;
+
+            let cols;
+            if (totalCards <= 12) cols = isPortrait ? 3 : 4;
+            else if (totalCards <= 20) cols = isPortrait ? 4 : 5;
+            else cols = isPortrait ? 5 : 6;
             
-            // Márgenes equilibrados
-            const marginX = isMobile ? window.innerWidth * 0.08 : window.innerWidth * 0.1; 
-            const marginYStart = isMobile ? 100 : window.innerHeight * 0.15; 
+            const rows = Math.ceil(totalCards / cols);
+            
+            const marginX = isMobile ? window.innerWidth * 0.05 : window.innerWidth * 0.1; 
+            const marginYStart = isMobile ? 90 : window.innerHeight * 0.15; 
             const marginYEnd = isMobile ? 50 : window.innerHeight * 0.1;
-            const gap = isMobile ? 15 : 25; 
             
+            const baseGap = isMobile ? 15 : 25; 
+            const gap = totalCards > 20 ? (isMobile ? 8 : 15) : baseGap;
+
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
             const availableH = window.innerHeight - marginYStart - marginYEnd - (gap * (rows - 1));
             const cardSize = Math.min(availableW / cols, availableH / rows);
@@ -355,16 +451,10 @@
             });
         }
 
-        // --- CORRECCIÓN FINAL AQUÍ ---
         function handleCardInteraction(cursorX, cursorY) {
             if (lockBoard) return;
-            
-            // SELECCIÓN INVERTIDA: (1 - cursorX)
-            // Esto corrige el efecto espejo en la selección de cartas,
-            // mientras que el punto verde se dibuja con la coordenada normal.
             const pixelX = (1 - cursorX) * canvasElement.width; 
             const pixelY = cursorY * canvasElement.height;
-            
             for (let card of cards) {
                 if (!card.isFlipped && !card.isMatched) {
                     if (pixelX > card.x && pixelX < card.x + card.w &&
@@ -391,8 +481,7 @@
                 playSound('match');
                 players[currentPlayerIndex].score++;
                 matchesFound++;
-                card1.isMatched = true;
-                card2.isMatched = true;
+                card1.isMatched = true; card2.isMatched = true;
                 createExplosion(card1.x + card1.w/2, card1.y + card1.h/2);
                 createExplosion(card2.x + card2.w/2, card2.y + card2.h/2);
                 speak("¡" + card1.name + "!");
@@ -404,8 +493,7 @@
                 players[currentPlayerIndex].errors++;
                 updateHUD();
                 setTimeout(() => {
-                    card1.isFlipped = false;
-                    card2.isFlipped = false;
+                    card1.isFlipped = false; card2.isFlipped = false;
                     currentPlayerIndex = (currentPlayerIndex + 1) % 2;
                     updateHUD();
                     speak("Turno de " + players[currentPlayerIndex].name);
@@ -414,9 +502,7 @@
             }
         }
 
-        function resetBoard() {
-            [lockBoard, flippedCards] = [false, []];
-        }
+        function resetBoard() { [lockBoard, flippedCards] = [false, []]; }
 
         function endGame() {
             clearInterval(timerInterval);
@@ -460,16 +546,12 @@
         function drawParticles() {
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.03;
+                p.x += p.vx; p.y += p.vy; p.life -= 0.03;
                 if (p.life <= 0) particles.splice(i, 1);
                 else {
                     ctx.globalAlpha = p.life;
                     ctx.fillStyle = p.color;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill();
                 }
             }
             ctx.globalAlpha = 1.0;
@@ -481,8 +563,7 @@
             ctx.save();
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-            ctx.translate(canvasElement.width, 0);
-            ctx.scale(-1, 1);
+            ctx.translate(canvasElement.width, 0); ctx.scale(-1, 1);
             const time = Date.now() * 0.002;
 
             cards.forEach(card => {
@@ -491,37 +572,21 @@
                 if (card.scale > 1) card.scale -= 0.02;
                 const cx = card.x + card.w/2;
                 const cy = card.y + card.h/2;
-                ctx.translate(cx, cy);
-                ctx.scale(card.scale, card.scale);
-                ctx.translate(-cx, -cy);
-                ctx.beginPath();
-                ctx.roundRect(card.x, card.y, card.w, card.h, 15);
+                ctx.translate(cx, cy); ctx.scale(card.scale, card.scale); ctx.translate(-cx, -cy);
+                ctx.beginPath(); ctx.roundRect(card.x, card.y, card.w, card.h, 15);
+                
                 if (card.isFlipped || card.isMatched) {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-                    ctx.fill();
-                    ctx.strokeStyle = '#FFD700';
-                    ctx.lineWidth = card.isMatched ? 6 : 3;
-                    ctx.stroke();
-                    ctx.font = `${card.w * 0.6}px Arial`;
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillStyle = "black";
-                    ctx.fillText(card.emoji, card.x + card.w/2, card.y + card.h/2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'; ctx.fill();
+                    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = card.isMatched ? 6 : 3; ctx.stroke();
+                    ctx.font = `${card.w * 0.6}px Arial`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "black"; ctx.fillText(card.emoji, card.x + card.w/2, card.y + card.h/2);
                 } else {
-                    ctx.fillStyle = 'rgba(20, 40, 70, 0.5)'; 
-                    ctx.fill();
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.font = `${card.w * 0.4}px Arial`;
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-                    ctx.fillText("?", card.x + card.w/2, card.y + card.h/2);
+                    ctx.fillStyle = 'rgba(20, 40, 70, 0.5)'; ctx.fill();
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.font = `${card.w * 0.4}px Arial`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; ctx.fillText("?", card.x + card.w/2, card.y + card.h/2);
                 }
-                ctx.setTransform(1, 0, 0, 1, 0, 0); 
-                ctx.translate(canvasElement.width, 0);
-                ctx.scale(-1, 1);
+                ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(canvasElement.width, 0); ctx.scale(-1, 1);
             });
             drawParticles();
             ctx.restore(); 
@@ -537,27 +602,15 @@
                     const cx = (indexTip.x + thumbTip.x) / 2;
                     const cy = (indexTip.y + thumbTip.y) / 2;
                     
-                    // --- PUNTO VERDE NORMAL (SIN INVERTIR) ---
                     const cursorX = cx * canvasElement.width; 
                     const cursorY = cy * canvasElement.height;
                     
-                    ctx.beginPath();
-                    ctx.arc(cursorX, cursorY, 15, 0, Math.PI*2);
-                    ctx.fillStyle = isPinching ? 'rgba(0, 255, 0, 0.7)' : 'rgba(255, 255, 255, 0.3)';
-                    ctx.fill();
-                    ctx.strokeStyle = isPinching ? '#00FF00' : '#FFFFFF';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-
-                    if (!isPinching) {
-                        ctx.beginPath();
-                        ctx.arc(cursorX, cursorY, 20, 0, Math.PI*2);
-                        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                        ctx.stroke();
-                    }
+                    ctx.beginPath(); ctx.arc(cursorX, cursorY, 15, 0, Math.PI*2);
+                    ctx.fillStyle = isPinching ? 'rgba(0, 255, 0, 0.7)' : 'rgba(255, 255, 255, 0.3)'; ctx.fill();
+                    ctx.strokeStyle = isPinching ? '#00FF00' : '#FFFFFF'; ctx.lineWidth = 2; ctx.stroke();
+                    if (!isPinching) { ctx.beginPath(); ctx.arc(cursorX, cursorY, 20, 0, Math.PI*2); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.stroke(); }
 
                     if (isPinching && !wasPinching && Date.now() > pinchCooldown) {
-                        // Pasamos 'cx' normal. La inversión se hace DENTRO de handleCardInteraction
                         handleCardInteraction(cx, cy); 
                         pinchCooldown = Date.now() + 500; 
                     }
@@ -579,9 +632,7 @@
         }
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({
-            maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
-        });
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         hands.onResults(onResults);
 
         async function startCamera() {
