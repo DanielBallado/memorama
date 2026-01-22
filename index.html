@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Balanced Size</title>
+    <title>Memorama AR - Final Fix</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -16,7 +16,7 @@
         #input_video { display: none; }
         #output_canvas {
             position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-            object-fit: cover; transform: scaleX(-1);
+            object-fit: cover; transform: scaleX(-1); /* EL CSS HACE EL EFECTO ESPEJO */
         }
         
         /* UI */
@@ -51,7 +51,7 @@
         .grid-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,114,255,0.6); }
         .grid-btn:active { transform: scale(0.95); }
 
-        /* HUD Compacto */
+        /* HUD */
         .hud {
             position: absolute; top: 0; left: 0; width: 100%; padding: 10px;
             display: flex; justify-content: space-between; align-items: flex-start;
@@ -196,7 +196,7 @@
         let wasPinching = false; 
         let pinchCooldown = 0;   
 
-        // --- SISTEMA DE SONIDO (Web Audio API) ---
+        // --- SISTEMA DE SONIDO ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         function playSound(type) {
@@ -306,7 +306,6 @@
             document.getElementById('p2NameDisplay').innerText = players[1].name;
             document.getElementById('p2Score').innerText = players[1].score;
             document.getElementById('p2Errors').innerText = players[1].errors;
-
             const p1Card = document.getElementById('p1Card');
             const p2Card = document.getElementById('p2Card');
             if (currentPlayerIndex === 0) {
@@ -325,29 +324,22 @@
             document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
-        // --- AJUSTE DE TAMAÑO EQUILIBRADO ---
         function createGrid() {
             const isPortrait = window.innerHeight > window.innerWidth;
             const cols = isPortrait ? 3 : 4;
             const rows = Math.ceil(cards.length / cols);
-            
             const isMobile = window.innerWidth < 600;
-
-            // Hemos aumentado estos valores respecto a la versión anterior
-            // para dar más aire y que las cartas se reduzcan un poco.
+            
+            // Márgenes equilibrados
             const marginX = isMobile ? window.innerWidth * 0.08 : window.innerWidth * 0.1; 
             const marginYStart = isMobile ? 100 : window.innerHeight * 0.15; 
             const marginYEnd = isMobile ? 50 : window.innerHeight * 0.1;
-            
-            // Gap un poco más grande que la versión "maximizada"
             const gap = isMobile ? 15 : 25; 
             
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
             const availableH = window.innerHeight - marginYStart - marginYEnd - (gap * (rows - 1));
-            
             const cardSize = Math.min(availableW / cols, availableH / rows);
 
-            // Centrado horizontal
             const totalGridW = (cardSize * cols) + (gap * (cols - 1));
             const startX = (window.innerWidth - totalGridW) / 2;
 
@@ -363,10 +355,16 @@
             });
         }
 
+        // --- CORRECCIÓN FINAL AQUÍ ---
         function handleCardInteraction(cursorX, cursorY) {
             if (lockBoard) return;
+            
+            // SELECCIÓN INVERTIDA: (1 - cursorX)
+            // Esto corrige el efecto espejo en la selección de cartas,
+            // mientras que el punto verde se dibuja con la coordenada normal.
             const pixelX = (1 - cursorX) * canvasElement.width; 
             const pixelY = cursorY * canvasElement.height;
+            
             for (let card of cards) {
                 if (!card.isFlipped && !card.isMatched) {
                     if (pixelX > card.x && pixelX < card.x + card.w &&
@@ -538,7 +536,9 @@
                     const isPinching = distance < 0.08;
                     const cx = (indexTip.x + thumbTip.x) / 2;
                     const cy = (indexTip.y + thumbTip.y) / 2;
-                    const cursorX = (1 - cx) * canvasElement.width; 
+                    
+                    // --- PUNTO VERDE NORMAL (SIN INVERTIR) ---
+                    const cursorX = cx * canvasElement.width; 
                     const cursorY = cy * canvasElement.height;
                     
                     ctx.beginPath();
@@ -557,6 +557,7 @@
                     }
 
                     if (isPinching && !wasPinching && Date.now() > pinchCooldown) {
+                        // Pasamos 'cx' normal. La inversión se hace DENTRO de handleCardInteraction
                         handleCardInteraction(cx, cy); 
                         pinchCooldown = Date.now() + 500; 
                     }
