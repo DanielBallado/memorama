@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Parlante</title>
+    <title>Memorama AR - Multijugador</title>
     <style>
-        /* ESTILOS GENERALES */
+        /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
             background: #111;
@@ -25,44 +25,113 @@
             transform: scaleX(-1);
         }
         
-        /* INTERFAZ CRISTAL */
+        /* --- INTERFAZ DE CRISTAL (UI) --- */
         .menu, .victory, .loading {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 30; 
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
             text-align: center;
+            padding: 20px;
         }
         .hidden { display: none !important; }
         
-        h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 0 4px 10px rgba(0,0,0,0.5); color: #FFD700; }
         
-        .grid-btn {
-            background: rgba(255, 255, 255, 0.9); 
-            color: #333; border: none; padding: 15px 30px;
-            margin: 10px; border-radius: 50px; font-size: 1.2rem; font-weight: bold;
-            cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        /* LOGIN STYLES */
+        .login-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
         }
-        .grid-btn:hover { transform: scale(1.05); background: white; }
         
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            text-align: center;
+        }
+        .login-input:focus { border-color: #FFD700; background: rgba(0, 0, 0, 0.5); }
+
+        /* BOTONES */
+        .grid-btn {
+            background: linear-gradient(135deg, #e0e0e0, #ffffff);
+            color: #333; border: none; padding: 15px 30px;
+            margin: 10px; border-radius: 50px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            min-width: 150px;
+        }
+        .grid-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .grid-btn:active { transform: scale(0.95); }
+
+        /* HUD (Marcador en juego) */
+        .hud {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 15px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 20;
+            pointer-events: none; /* Dejar pasar clicks al botón de salir */
+        }
+        
+        .player-card {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .player-card.active {
+            border-color: #00FF00;
+            background: rgba(0, 50, 0, 0.7);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px #00FF00;
+        }
+
+        .timer-box {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px;
+            font-size: 1.5rem; font-weight: bold; font-family: monospace;
+        }
+
+        /* TABLA DE RESUMEN */
+        .summary-table {
+            width: 100%; max-width: 500px;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .summary-table th, .summary-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        .summary-table th { background: rgba(0, 0, 0, 0.3); color: #FFD700; }
+        .winner-text { color: #00FF00; font-weight: bold; font-size: 1.2rem; margin-top: 10px; }
+
         .back-btn {
-            position: absolute; top: 20px; right: 20px; z-index: 20;
-            background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 20px;
+            position: absolute; bottom: 20px; right: 20px; z-index: 25;
+            background: rgba(255, 50, 50, 0.8); color: white;
+            padding: 10px 20px; border-radius: 20px;
             border: none; font-weight: bold; cursor: pointer; display: none;
+            pointer-events: auto;
         }
         .back-btn.show { display: block; }
-
-        .instructions {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 15; 
-            background: rgba(0, 0, 0, 0.5); 
-            padding: 10px 25px;
-            border-radius: 30px; 
-            pointer-events: none; 
-            font-size: 1.2rem;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -73,13 +142,42 @@
 <body>
 
     <div class="container">
+        
         <div id="menuScreen" class="menu">
-            <h1>🗣️ Memorama Parlante</h1>
-            <p style="font-size: 1.2rem; margin-bottom: 20px; max-width: 80%;">Haz el gesto de "pinza" 👌 para jugar.</p>
+            <h1>👥 Memorama VS</h1>
+            
+            <div class="login-container">
+                <div class="input-group">
+                    <label>Jugador 1</label>
+                    <input type="text" id="p1Input" class="login-input" placeholder="Nombre J1" value="Jugador 1">
+                </div>
+                <div class="input-group">
+                    <label>Jugador 2</label>
+                    <input type="text" id="p2Input" class="login-input" placeholder="Nombre J2" value="Jugador 2">
+                </div>
+            </div>
+
+            <p style="margin-bottom: 15px; opacity: 0.8;">Elige Categoría para Empezar:</p>
             <div>
                 <button class="grid-btn" onclick="startGame('animals')">🐶 Animales</button>
                 <button class="grid-btn" onclick="startGame('fruits')">🍎 Frutas</button>
                 <button class="grid-btn" onclick="startGame('vehicles')">🚗 Vehículos</button>
+            </div>
+        </div>
+
+        <div id="gameHUD" class="hud hidden">
+            <div id="p1Card" class="player-card active">
+                <div id="p1NameDisplay" style="font-weight:bold;">Jugador 1</div>
+                <div>Pares: <span id="p1Score">0</span></div>
+                <div style="font-size:0.8rem; color:#ffaaaa;">Errores: <span id="p1Errors">0</span></div>
+            </div>
+
+            <div class="timer-box" id="timerDisplay">00:00</div>
+
+            <div id="p2Card" class="player-card">
+                <div id="p2NameDisplay" style="font-weight:bold;">Jugador 2</div>
+                <div>Pares: <span id="p2Score">0</span></div>
+                <div style="font-size:0.8rem; color:#ffaaaa;">Errores: <span id="p2Errors">0</span></div>
             </div>
         </div>
 
@@ -88,18 +186,41 @@
         </div>
 
         <div id="victoryScreen" class="victory hidden">
-            <div style="font-size: 4rem;">🎉🏆🎉</div>
-            <h1>¡Lo lograste!</h1>
-            <button class="grid-btn" onclick="resetGame()">🔄 Jugar de nuevo</button>
-            <button class="grid-btn" onclick="backToMenu()">🏠 Menú</button>
+            <h1>📊 Resumen de Partida</h1>
+            
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th>Jugador</th>
+                        <th>Pares</th>
+                        <th>Errores</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="sumP1Name">J1</td>
+                        <td id="sumP1Score">0</td>
+                        <td id="sumP1Errors" style="color:#ff6666">0</td>
+                    </tr>
+                    <tr>
+                        <td id="sumP2Name">J2</td>
+                        <td id="sumP2Score">0</td>
+                        <td id="sumP2Errors" style="color:#ff6666">0</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-bottom: 20px;">
+                <p>Tiempo Total: <span id="sumTime" style="font-weight:bold; font-size:1.2rem;">00:00</span></p>
+                <p id="winnerText" class="winner-text">¡Ganador: Nadie!</p>
+            </div>
+
+            <button class="grid-btn" onclick="resetGame()">🔄 Nueva Partida</button>
+            <button class="grid-btn" onclick="backToMenu()">🏠 Menú Principal</button>
         </div>
 
         <button id="backBtn" class="back-btn" onclick="backToMenu()">❌ Salir</button>
         
-        <div id="instructions" class="instructions hidden">
-            👌 Pellizca para voltear
-        </div>
-
         <video id="input_video" playsinline></video>
         <canvas id="output_canvas"></canvas>
     </div>
@@ -109,34 +230,26 @@
         const canvasElement = document.getElementById('output_canvas');
         const ctx = canvasElement.getContext('2d');
         
-        // --- 1. NUEVA ESTRUCTURA DE DATOS CON NOMBRES ---
+        // --- DATA ---
         const categories = {
             animals: [
-                { emoji: '🐶', name: 'Perro' },
-                { emoji: '🐱', name: 'Gato' },
-                { emoji: '🐭', name: 'Ratón' },
-                { emoji: '🐰', name: 'Conejo' },
-                { emoji: '🦊', name: 'Zorro' },
-                { emoji: '🐻', name: 'Oso' }
+                { emoji: '🐶', name: 'Perro' }, { emoji: '🐱', name: 'Gato' },
+                { emoji: '🐭', name: 'Ratón' }, { emoji: '🐰', name: 'Conejo' },
+                { emoji: '🦊', name: 'Zorro' }, { emoji: '🐻', name: 'Oso' }
             ],
             fruits: [
-                { emoji: '🍎', name: 'Manzana' },
-                { emoji: '🍌', name: 'Plátano' },
-                { emoji: '🍇', name: 'Uvas' },
-                { emoji: '🍉', name: 'Sandía' },
-                { emoji: '🍓', name: 'Fresa' },
-                { emoji: '🍒', name: 'Cereza' }
+                { emoji: '🍎', name: 'Manzana' }, { emoji: '🍌', name: 'Plátano' },
+                { emoji: '🍇', name: 'Uvas' }, { emoji: '🍉', name: 'Sandía' },
+                { emoji: '🍓', name: 'Fresa' }, { emoji: '🍒', name: 'Cereza' }
             ],
             vehicles: [
-                { emoji: '🚗', name: 'Coche' },
-                { emoji: '🚓', name: 'Policía' },
-                { emoji: '🚀', name: 'Cohete' },
-                { emoji: '🚁', name: 'Helicóptero' },
-                { emoji: '🚂', name: 'Tren' },
-                { emoji: '🚲', name: 'Bicicleta' }
+                { emoji: '🚗', name: 'Coche' }, { emoji: '🚓', name: 'Policía' },
+                { emoji: '🚀', name: 'Cohete' }, { emoji: '🚁', name: 'Helicóptero' },
+                { emoji: '🚂', name: 'Tren' }, { emoji: '🚲', name: 'Bicicleta' }
             ]
         };
 
+        // --- ESTADO DEL JUEGO ---
         let cards = [];
         let flippedCards = [];
         let lockBoard = false;
@@ -144,25 +257,34 @@
         let totalPairs = 0;
         let particles = [];
         let gameActive = false;
+        
+        // Multiplayer State
+        let players = [
+            { name: "J1", score: 0, errors: 0 },
+            { name: "J2", score: 0, errors: 0 }
+        ];
+        let currentPlayerIndex = 0; // 0 o 1
+        
+        // Timer State
+        let startTime = 0;
+        let timerInterval = null;
+
+        // Input
         let wasPinching = false; 
         let pinchCooldown = 0;   
         
         // --- AUDIO ---
         function speak(text) {
             if ('speechSynthesis' in window) {
-                // Cancelar audio anterior para que no se amontonen
                 window.speechSynthesis.cancel();
-                
                 const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'es-ES'; // Español
-                u.rate = 1.0;     // Velocidad normal
-                u.pitch = 1.1;    // Tono ligeramente alegre
-                
+                u.lang = 'es-ES';
+                u.rate = 1.1; 
                 window.speechSynthesis.speak(u);
             }
         }
 
-        // --- CANVAS ---
+        // --- GESTIÓN DE PANTALLA ---
         function resizeCanvas() {
             canvasElement.width = window.innerWidth;
             canvasElement.height = window.innerHeight;
@@ -171,18 +293,33 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // --- LÓGICA ---
+        // --- LÓGICA DE JUEGO ---
         function startGame(category) {
+            // Obtener nombres de los inputs
+            const name1 = document.getElementById('p1Input').value.trim() || "Jugador 1";
+            const name2 = document.getElementById('p2Input').value.trim() || "Jugador 2";
+            
+            // Inicializar jugadores
+            players = [
+                { name: name1, score: 0, errors: 0 },
+                { name: name2, score: 0, errors: 0 }
+            ];
+            currentPlayerIndex = 0; // Empieza jugador 1
+
+            // UI Updates
             document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('victoryScreen').classList.add('hidden');
             document.getElementById('loadingMsg').classList.remove('hidden');
+            document.getElementById('gameHUD').classList.remove('hidden');
             document.getElementById('backBtn').classList.add('show');
-            document.getElementById('instructions').classList.remove('hidden');
+
+            updateHUD();
 
             if (!videoElement.srcObject) startCamera();
             else document.getElementById('loadingMsg').classList.add('hidden');
 
+            // Preparar Cartas
             const items = categories[category];
-            // Duplicar objetos para hacer pares
             let deck = [...items, ...items]; 
             deck.sort(() => Math.random() - 0.5);
 
@@ -192,11 +329,10 @@
             lockBoard = false;
             particles = [];
 
-            // Mapeamos el objeto ahora con 'name'
             cards = deck.map((item, index) => ({
                 id: index,
                 emoji: item.emoji,
-                name: item.name, // Guardamos el nombre aquí
+                name: item.name,
                 isFlipped: false,
                 isMatched: false,
                 x: 0, y: 0, w: 0, h: 0,
@@ -205,16 +341,53 @@
 
             gameActive = true;
             createGrid();
-            speak("Encuentra los pares");
+            
+            // Iniciar Timer
+            startTime = Date.now();
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimerDisplay, 1000);
+
+            speak("Turno de " + players[currentPlayerIndex].name);
+        }
+
+        function updateHUD() {
+            // Actualizar nombres y scores
+            document.getElementById('p1NameDisplay').innerText = players[0].name;
+            document.getElementById('p1Score').innerText = players[0].score;
+            document.getElementById('p1Errors').innerText = players[0].errors;
+
+            document.getElementById('p2NameDisplay').innerText = players[1].name;
+            document.getElementById('p2Score').innerText = players[1].score;
+            document.getElementById('p2Errors').innerText = players[1].errors;
+
+            // Resaltar jugador activo
+            const p1Card = document.getElementById('p1Card');
+            const p2Card = document.getElementById('p2Card');
+
+            if (currentPlayerIndex === 0) {
+                p1Card.classList.add('active');
+                p2Card.classList.remove('active');
+            } else {
+                p1Card.classList.remove('active');
+                p2Card.classList.add('active');
+            }
+        }
+
+        function updateTimerDisplay() {
+            const delta = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(delta / 60).toString().padStart(2, '0');
+            const secs = (delta % 60).toString().padStart(2, '0');
+            document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
         function createGrid() {
+            // Dejar espacio arriba para el HUD
             const cols = window.innerWidth > window.innerHeight ? 4 : 3;
             const rows = Math.ceil(cards.length / cols);
             
-            const gap = 25; 
-            const marginX = window.innerWidth * 0.15; 
-            const marginY = window.innerHeight * 0.20; 
+            const gap = 20; 
+            const marginX = window.innerWidth * 0.1; 
+            const marginY = window.innerHeight * 0.25; // Más margen arriba para el HUD
             
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
             const availableH = window.innerHeight - (marginY * 2) - (gap * (rows - 1));
@@ -235,6 +408,7 @@
         function handleCardInteraction(cursorX, cursorY) {
             if (lockBoard) return;
             
+            // Invertir X por el espejo
             const pixelX = (1 - cursorX) * canvasElement.width; 
             const pixelY = cursorY * canvasElement.height;
 
@@ -264,34 +438,41 @@
             const [card1, card2] = flippedCards;
 
             if (card1.emoji === card2.emoji) {
-                // --- MATCH ---
+                // --- ACIERTO (MATCH) ---
+                players[currentPlayerIndex].score++; // Sumar punto
                 matchesFound++;
+                
                 card1.isMatched = true;
                 card2.isMatched = true;
                 
-                // Efectos visuales
                 createExplosion(card1.x + card1.w/2, card1.y + card1.h/2);
                 createExplosion(card2.x + card2.w/2, card2.y + card2.h/2);
                 
-                // --- 2. AQUÍ ESTÁ EL CAMBIO DE AUDIO ---
-                // Decimos el nombre de la figura encontrada
-                speak("¡" + card1.name + "!"); 
-
-                resetBoard();
+                speak("¡" + card1.name + "! Punto para " + players[currentPlayerIndex].name);
                 
+                updateHUD(); // Actualizar marcador
+                resetBoard(); // El jugador MANTIENE el turno si acierta
+
                 if (matchesFound === totalPairs) {
-                    setTimeout(() => {
-                        document.getElementById('victoryScreen').classList.remove('hidden');
-                        speak("¡Excelente trabajo! Ganaste.");
-                    }, 2000); // Damos tiempo a que termine de decir el nombre del último par
+                    endGame();
                 }
             } else {
-                // --- NO MATCH ---
+                // --- ERROR (NO MATCH) ---
+                players[currentPlayerIndex].errors++; // Sumar error
+                updateHUD(); // Mostrar error inmediatamente
+
+                // Cambio de turno
                 setTimeout(() => {
                     card1.isFlipped = false;
                     card2.isFlipped = false;
+                    
+                    // Cambiar jugador
+                    currentPlayerIndex = (currentPlayerIndex + 1) % 2;
+                    updateHUD();
+                    speak("Turno de " + players[currentPlayerIndex].name);
+                    
                     resetBoard();
-                }, 1000);
+                }, 1500); // 1.5 segundos para ver el error
             }
         }
 
@@ -299,6 +480,42 @@
             [lockBoard, flippedCards] = [false, []];
         }
 
+        function endGame() {
+            clearInterval(timerInterval);
+            const totalTime = document.getElementById('timerDisplay').innerText;
+            
+            setTimeout(() => {
+                document.getElementById('victoryScreen').classList.remove('hidden');
+                document.getElementById('gameHUD').classList.add('hidden');
+                
+                // Llenar tabla de resumen
+                document.getElementById('sumP1Name').innerText = players[0].name;
+                document.getElementById('sumP1Score').innerText = players[0].score;
+                document.getElementById('sumP1Errors').innerText = players[0].errors;
+
+                document.getElementById('sumP2Name').innerText = players[1].name;
+                document.getElementById('sumP2Score').innerText = players[1].score;
+                document.getElementById('sumP2Errors').innerText = players[1].errors;
+
+                document.getElementById('sumTime').innerText = totalTime;
+
+                // Determinar ganador
+                const winnerElem = document.getElementById('winnerText');
+                if (players[0].score > players[1].score) {
+                    winnerElem.innerText = `🏆 ¡Ganador: ${players[0].name}!`;
+                    speak(`Felicidades ${players[0].name}, has ganado.`);
+                } else if (players[1].score > players[0].score) {
+                    winnerElem.innerText = `🏆 ¡Ganador: ${players[1].name}!`;
+                    speak(`Felicidades ${players[1].name}, has ganado.`);
+                } else {
+                    winnerElem.innerText = "🤝 ¡Es un Empate!";
+                    speak("Es un empate. ¡Bien jugado ambos!");
+                }
+
+            }, 1000);
+        }
+
+        // --- VISUALES ---
         function createExplosion(x, y) {
             for (let i = 0; i < 30; i++) {
                 particles.push({
@@ -317,7 +534,6 @@
                 p.x += p.vx;
                 p.y += p.vy;
                 p.life -= 0.04;
-                
                 if (p.life <= 0) particles.splice(i, 1);
                 else {
                     ctx.globalAlpha = p.life;
@@ -336,11 +552,9 @@
 
             ctx.save();
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            
-            // 1. VIDEO DE FONDO
             ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-            // 2. MODO ESPEJO PARA ELEMENTOS DE JUEGO
+            // Espejo para UI AR
             ctx.translate(canvasElement.width, 0);
             ctx.scale(-1, 1);
 
@@ -354,34 +568,27 @@
                 ctx.scale(card.scale, card.scale);
                 ctx.translate(-cx, -cy);
 
-                // --- ESTILO CRISTAL (Glassmorphism) ---
+                // Estilo Cristal
                 ctx.beginPath();
                 ctx.roundRect(card.x, card.y, card.w, card.h, 15);
                 
                 if (card.isFlipped || card.isMatched) {
-                    // Frente (semitransparente blanco)
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
                     ctx.fill();
-                    
                     ctx.strokeStyle = '#FFD700';
                     ctx.lineWidth = card.isMatched ? 6 : 3;
                     ctx.stroke();
-                    
-                    // Emoji
                     ctx.font = `${card.w * 0.6}px Arial`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillStyle = "black";
                     ctx.fillText(card.emoji, card.x + card.w/2, card.y + card.h/2);
                 } else {
-                    // Reverso (semitransparente oscuro para ver humano)
                     ctx.fillStyle = 'rgba(30, 50, 80, 0.5)'; 
                     ctx.fill();
-                    
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                     ctx.lineWidth = 3;
                     ctx.stroke();
-                    
                     ctx.font = `${card.w * 0.4}px Arial`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
@@ -397,7 +604,7 @@
             drawParticles();
             ctx.restore(); 
 
-            // 3. MANOS
+            // Hand Tracking
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
                     drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: 'rgba(0, 255, 0, 0.6)', lineWidth: 2});
@@ -430,17 +637,17 @@
             }
         }
 
-        // --- SETUP ---
+        // --- INIT ---
         function resetGame() {
             document.getElementById('victoryScreen').classList.add('hidden');
-            startGame(Object.keys(categories)[0]); 
+            document.getElementById('menuScreen').classList.remove('hidden');
+            gameActive = false;
         }
         function backToMenu() {
-            gameActive = false;
-            document.getElementById('menuScreen').classList.remove('hidden');
-            document.getElementById('victoryScreen').classList.add('hidden');
-            document.getElementById('instructions').classList.add('hidden');
+            resetGame();
+            document.getElementById('gameHUD').classList.add('hidden');
             document.getElementById('backBtn').classList.remove('show');
+            if(timerInterval) clearInterval(timerInterval);
         }
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
