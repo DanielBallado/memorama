@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Smart UX</title>
+    <title>Memorama AR - Final Balanced</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -56,16 +56,8 @@
         .level-btn.selected {
             background: #FFD700; color: #000; box-shadow: 0 0 10px #FFD700;
         }
-        
-        /* ESTILO PARA BOTONES DESHABILITADOS EN MÓVIL */
-        .level-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            text-decoration: line-through;
-        }
-        .mobile-warning {
-            font-size: 0.8rem; color: #ff6666; margin-bottom: 15px; height: 1.2rem;
-        }
+        .level-btn:disabled { opacity: 0.3; cursor: not-allowed; text-decoration: line-through; }
+        .mobile-warning { font-size: 0.8rem; color: #ff6666; margin-bottom: 15px; height: 1.2rem; }
 
         /* BOTONES CATEGORÍA */
         .grid-btn {
@@ -232,11 +224,7 @@
             ]
         };
 
-        const levelConfig = {
-            easy: 6,    
-            medium: 10, 
-            hard: 15    
-        };
+        const levelConfig = { easy: 6, medium: 10, hard: 15 };
         let currentLevel = 'easy';
 
         let cards = [];
@@ -294,49 +282,39 @@
             }
         }
 
-        // --- DETECCIÓN DE PANTALLA Y RESTRICCIONES ---
+        // --- DETECCIÓN DE PANTALLA ---
         function checkScreenConstraints() {
             canvasElement.width = window.innerWidth;
             canvasElement.height = window.innerHeight;
             if(gameActive) createGrid(); 
 
-            // Lógica de restricción (Mobile < 800px)
             const isSmallScreen = window.innerWidth < 800;
             const btnMed = document.getElementById('btnMedium');
             const btnHard = document.getElementById('btnHard');
             const warningText = document.getElementById('mobileWarning');
 
             if (isSmallScreen) {
-                // Si la pantalla es pequeña, forzamos fácil
                 if (currentLevel !== 'easy') {
                     selectLevel('easy', document.getElementById('btnEasy'));
                 }
-                
                 btnMed.disabled = true;
                 btnMed.innerText = "🔒 Medio";
-                
                 btnHard.disabled = true;
                 btnHard.innerText = "🔒 Difícil";
-                
-                warningText.innerText = "⚠️ Niveles altos solo disponibles en PC/Tablet";
+                warningText.innerText = "⚠️ Niveles altos solo en PC/Tablet";
             } else {
-                // Si es pantalla grande, habilitamos
                 btnMed.disabled = false;
                 btnMed.innerText = "Medio (20)";
-                
                 btnHard.disabled = false;
                 btnHard.innerText = "Difícil (30)";
-                
                 warningText.innerText = "";
             }
         }
         window.addEventListener('resize', checkScreenConstraints);
-        // Ejecutar al inicio
         window.addEventListener('load', checkScreenConstraints);
 
-
         function selectLevel(level, btnElement) {
-            if (btnElement.disabled) return; // Seguridad extra
+            if (btnElement.disabled) return;
             playSound('click');
             currentLevel = level;
             document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('selected'));
@@ -413,6 +391,7 @@
             document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
+        // --- GRID CORREGIDO PARA ESTÉTICA ---
         function createGrid() {
             const isPortrait = window.innerHeight > window.innerWidth;
             const isMobile = window.innerWidth < 600;
@@ -425,11 +404,15 @@
             
             const rows = Math.ceil(totalCards / cols);
             
-            const marginX = isMobile ? window.innerWidth * 0.05 : window.innerWidth * 0.1; 
-            const marginYStart = isMobile ? 90 : window.innerHeight * 0.15; 
-            const marginYEnd = isMobile ? 50 : window.innerHeight * 0.1;
+            // --- AQUÍ ESTÁ EL AJUSTE CLAVE ---
+            // Recuperamos márgenes grandes para móvil cuando hay pocas cartas
+            // para que no se vean gigantes.
+            const marginX = isMobile ? window.innerWidth * 0.12 : window.innerWidth * 0.1; 
+            const marginYStart = isMobile ? 110 : window.innerHeight * 0.15; 
+            const marginYEnd = isMobile ? 80 : window.innerHeight * 0.1;
             
-            const baseGap = isMobile ? 15 : 25; 
+            // Aumentamos el gap en móvil para dar más aire
+            const baseGap = isMobile ? 20 : 25; 
             const gap = totalCards > 20 ? (isMobile ? 8 : 15) : baseGap;
 
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
