@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Estilo Cristal</title>
+    <title>Memorama AR - Parlante</title>
     <style>
         /* ESTILOS GENERALES */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
-            /* Fondo por si la cámara tarda, pero se cubrirá con video */
             background: #111;
             color: white;
             font-family: 'Segoe UI', sans-serif;
@@ -23,16 +22,16 @@
             position: absolute; left: 0; top: 0;
             width: 100%; height: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Efecto espejo */
+            transform: scaleX(-1);
         }
         
-        /* INTERFAZ (UI) - Hacemos los menús más transparentes también */
+        /* INTERFAZ CRISTAL */
         .menu, .victory, .loading {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 30; 
-            background: rgba(0, 0, 0, 0.6); /* Fondo semitransparente para ver la cámara detrás */
-            backdrop-filter: blur(5px); /* Efecto borroso elegante */
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
             text-align: center;
         }
         .hidden { display: none !important; }
@@ -75,8 +74,8 @@
 
     <div class="container">
         <div id="menuScreen" class="menu">
-            <h1>🧠 Memorama AR</h1>
-            <p style="font-size: 1.2rem; margin-bottom: 20px; max-width: 80%;">Haz el gesto de "pinza" 👌 sobre una carta transparente para voltearla.</p>
+            <h1>🗣️ Memorama Parlante</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 20px; max-width: 80%;">Haz el gesto de "pinza" 👌 para jugar.</p>
             <div>
                 <button class="grid-btn" onclick="startGame('animals')">🐶 Animales</button>
                 <button class="grid-btn" onclick="startGame('fruits')">🍎 Frutas</button>
@@ -91,7 +90,6 @@
         <div id="victoryScreen" class="victory hidden">
             <div style="font-size: 4rem;">🎉🏆🎉</div>
             <h1>¡Lo lograste!</h1>
-            <p id="finalTime" style="font-size: 1.5rem; margin: 10px 0;"></p>
             <button class="grid-btn" onclick="resetGame()">🔄 Jugar de nuevo</button>
             <button class="grid-btn" onclick="backToMenu()">🏠 Menú</button>
         </div>
@@ -111,11 +109,32 @@
         const canvasElement = document.getElementById('output_canvas');
         const ctx = canvasElement.getContext('2d');
         
-        // --- CONFIGURACIÓN ---
+        // --- 1. NUEVA ESTRUCTURA DE DATOS CON NOMBRES ---
         const categories = {
-            animals: ['🐶', '🐱', '🐭', '🐰', '🦊', '🐻'],
-            fruits: ['🍎', '🍌', '🍇', '🍉', '🍓', '🍒'],
-            vehicles: ['🚗', '🚓', '🚀', '🚁', '🚂', '🚲']
+            animals: [
+                { emoji: '🐶', name: 'Perro' },
+                { emoji: '🐱', name: 'Gato' },
+                { emoji: '🐭', name: 'Ratón' },
+                { emoji: '🐰', name: 'Conejo' },
+                { emoji: '🦊', name: 'Zorro' },
+                { emoji: '🐻', name: 'Oso' }
+            ],
+            fruits: [
+                { emoji: '🍎', name: 'Manzana' },
+                { emoji: '🍌', name: 'Plátano' },
+                { emoji: '🍇', name: 'Uvas' },
+                { emoji: '🍉', name: 'Sandía' },
+                { emoji: '🍓', name: 'Fresa' },
+                { emoji: '🍒', name: 'Cereza' }
+            ],
+            vehicles: [
+                { emoji: '🚗', name: 'Coche' },
+                { emoji: '🚓', name: 'Policía' },
+                { emoji: '🚀', name: 'Cohete' },
+                { emoji: '🚁', name: 'Helicóptero' },
+                { emoji: '🚂', name: 'Tren' },
+                { emoji: '🚲', name: 'Bicicleta' }
+            ]
         };
 
         let cards = [];
@@ -131,10 +150,14 @@
         // --- AUDIO ---
         function speak(text) {
             if ('speechSynthesis' in window) {
+                // Cancelar audio anterior para que no se amontonen
                 window.speechSynthesis.cancel();
+                
                 const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'es-ES';
-                u.rate = 1.1;
+                u.lang = 'es-ES'; // Español
+                u.rate = 1.0;     // Velocidad normal
+                u.pitch = 1.1;    // Tono ligeramente alegre
+                
                 window.speechSynthesis.speak(u);
             }
         }
@@ -159,6 +182,7 @@
             else document.getElementById('loadingMsg').classList.add('hidden');
 
             const items = categories[category];
+            // Duplicar objetos para hacer pares
             let deck = [...items, ...items]; 
             deck.sort(() => Math.random() - 0.5);
 
@@ -168,9 +192,11 @@
             lockBoard = false;
             particles = [];
 
-            cards = deck.map((emoji, index) => ({
+            // Mapeamos el objeto ahora con 'name'
+            cards = deck.map((item, index) => ({
                 id: index,
-                emoji: emoji,
+                emoji: item.emoji,
+                name: item.name, // Guardamos el nombre aquí
                 isFlipped: false,
                 isMatched: false,
                 x: 0, y: 0, w: 0, h: 0,
@@ -183,13 +209,12 @@
         }
 
         function createGrid() {
-            // Aumentamos los márgenes y huecos para ver más video
             const cols = window.innerWidth > window.innerHeight ? 4 : 3;
             const rows = Math.ceil(cards.length / cols);
             
-            const gap = 25; // Hueco más grande entre cartas
-            const marginX = window.innerWidth * 0.15; // Margen lateral más amplio
-            const marginY = window.innerHeight * 0.20; // Margen superior más amplio
+            const gap = 25; 
+            const marginX = window.innerWidth * 0.15; 
+            const marginY = window.innerHeight * 0.20; 
             
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
             const availableH = window.innerHeight - (marginY * 2) - (gap * (rows - 1));
@@ -210,7 +235,6 @@
         function handleCardInteraction(cursorX, cursorY) {
             if (lockBoard) return;
             
-            // Invertir X para lógica de colisión (por el efecto espejo)
             const pixelX = (1 - cursorX) * canvasElement.width; 
             const pixelY = cursorY * canvasElement.height;
 
@@ -240,21 +264,29 @@
             const [card1, card2] = flippedCards;
 
             if (card1.emoji === card2.emoji) {
+                // --- MATCH ---
                 matchesFound++;
                 card1.isMatched = true;
                 card2.isMatched = true;
+                
+                // Efectos visuales
                 createExplosion(card1.x + card1.w/2, card1.y + card1.h/2);
                 createExplosion(card2.x + card2.w/2, card2.y + card2.h/2);
-                speak("¡Bien!");
+                
+                // --- 2. AQUÍ ESTÁ EL CAMBIO DE AUDIO ---
+                // Decimos el nombre de la figura encontrada
+                speak("¡" + card1.name + "!"); 
+
                 resetBoard();
                 
                 if (matchesFound === totalPairs) {
                     setTimeout(() => {
                         document.getElementById('victoryScreen').classList.remove('hidden');
-                        speak("¡Felicidades! Ganaste.");
-                    }, 1000);
+                        speak("¡Excelente trabajo! Ganaste.");
+                    }, 2000); // Damos tiempo a que termine de decir el nombre del último par
                 }
             } else {
+                // --- NO MATCH ---
                 setTimeout(() => {
                     card1.isFlipped = false;
                     card2.isFlipped = false;
@@ -274,7 +306,7 @@
                     vx: (Math.random() - 0.5) * 12,
                     vy: (Math.random() - 0.5) * 12,
                     life: 1.0,
-                    color: `hsl(${Math.random()*360}, 100%, 70%)` // Colores más pastel/brillantes
+                    color: `hsl(${Math.random()*360}, 100%, 70%)`
                 });
             }
         }
@@ -298,7 +330,6 @@
             ctx.globalAlpha = 1.0;
         }
 
-        // --- DIBUJADO PRINCIPAL (Aquí está la magia de la transparencia) ---
         function onResults(results) {
             if (!gameActive) return;
             document.getElementById('loadingMsg').classList.add('hidden');
@@ -306,10 +337,10 @@
             ctx.save();
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             
-            // 1. DIBUJAR VIDEO (FONDO COMPLETO)
+            // 1. VIDEO DE FONDO
             ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-            // 2. PREPARAR ESPEJO PARA DIBUJAR CARTAS
+            // 2. MODO ESPEJO PARA ELEMENTOS DE JUEGO
             ctx.translate(canvasElement.width, 0);
             ctx.scale(-1, 1);
 
@@ -323,13 +354,12 @@
                 ctx.scale(card.scale, card.scale);
                 ctx.translate(-cx, -cy);
 
-                // --- ESTILO CRISTAL ---
+                // --- ESTILO CRISTAL (Glassmorphism) ---
                 ctx.beginPath();
                 ctx.roundRect(card.x, card.y, card.w, card.h, 15);
                 
                 if (card.isFlipped || card.isMatched) {
-                    // CARTA VOLTEADA (FRENTE)
-                    // Blanco semitransparente (0.85 alpha) para que se vea un poco el fondo
+                    // Frente (semitransparente blanco)
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
                     ctx.fill();
                     
@@ -344,22 +374,18 @@
                     ctx.fillStyle = "black";
                     ctx.fillText(card.emoji, card.x + card.w/2, card.y + card.h/2);
                 } else {
-                    // CARTA OCULTA (REVERSO)
-                    // Azul oscuro pero MUY TRANSPARENTE (0.5 alpha)
-                    // Esto permite ver al humano detrás claramente
+                    // Reverso (semitransparente oscuro para ver humano)
                     ctx.fillStyle = 'rgba(30, 50, 80, 0.5)'; 
                     ctx.fill();
                     
-                    // Borde blanco brillante para definir la forma
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                     ctx.lineWidth = 3;
                     ctx.stroke();
                     
-                    // Signo de interrogación sutil
                     ctx.font = `${card.w * 0.4}px Arial`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; // Texto también semitransparente
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
                     ctx.fillText("?", card.x + card.w/2, card.y + card.h/2);
                 }
                 
@@ -368,15 +394,12 @@
                 ctx.scale(-1, 1);
             });
 
-            // 3. Partículas
             drawParticles();
-
-            // 4. Manos (Restaurar coordenadas originales)
             ctx.restore(); 
 
+            // 3. MANOS
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
-                    // Dibujamos el esqueleto de la mano un poco más transparente para que no estorbe
                     drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: 'rgba(0, 255, 0, 0.6)', lineWidth: 2});
                     drawLandmarks(ctx, landmarks, {color: 'rgba(255, 0, 0, 0.6)', lineWidth: 1, radius: 3});
 
@@ -385,7 +408,6 @@
                     const distance = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
                     const isPinching = distance < 0.08;
                     
-                    // Cursor
                     const cx = (indexTip.x + thumbTip.x) / 2;
                     const cy = (indexTip.y + thumbTip.y) / 2;
                     const cursorX = (1 - cx) * canvasElement.width; 
@@ -393,7 +415,6 @@
                     
                     ctx.beginPath();
                     ctx.arc(cursorX, cursorY, 12, 0, Math.PI*2);
-                    // Cursor verde brillante si pinchas, blanco translúcido si no
                     ctx.fillStyle = isPinching ? 'rgba(0, 255, 0, 0.8)' : 'rgba(255, 255, 255, 0.4)';
                     ctx.fill();
                     ctx.strokeStyle = 'white';
