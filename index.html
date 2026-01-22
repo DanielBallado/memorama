@@ -3,133 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Multijugador</title>
+    <title>Memorama AR - Pro</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
-            background: #111;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-            position: fixed;
-            width: 100%; height: 100%;
+            background: #111; color: white; font-family: 'Segoe UI', sans-serif;
+            overflow: hidden; position: fixed; width: 100%; height: 100%;
         }
         .container { position: relative; width: 100vw; height: 100vh; }
         
         #input_video { display: none; }
         #output_canvas {
-            position: absolute; left: 0; top: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
+            position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+            object-fit: cover; transform: scaleX(-1);
         }
         
-        /* --- INTERFAZ DE CRISTAL (UI) --- */
+        /* UI */
         .menu, .victory, .loading {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 30; 
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            text-align: center;
-            padding: 20px;
+            z-index: 30; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+            text-align: center; padding: 20px; transition: opacity 0.5s;
         }
-        .hidden { display: none !important; }
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
         
-        h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 0 4px 10px rgba(0,0,0,0.5); color: #FFD700; }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #FFD700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
         
-        /* LOGIN STYLES */
         .login-container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            width: 100%;
-            max-width: 400px;
-            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2); width: 100%; max-width: 400px; margin-bottom: 20px;
         }
-        
         .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #aaa; }
         .login-input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            font-size: 1.1rem;
-            outline: none;
-            text-align: center;
+            width: 100%; padding: 12px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.4); color: white; font-size: 1.1rem; outline: none; text-align: center;
         }
-        .login-input:focus { border-color: #FFD700; background: rgba(0, 0, 0, 0.5); }
+        .login-input:focus { border-color: #00e5ff; background: rgba(0, 0, 0, 0.6); }
 
-        /* BOTONES */
         .grid-btn {
-            background: linear-gradient(135deg, #e0e0e0, #ffffff);
-            color: #333; border: none; padding: 15px 30px;
-            margin: 10px; border-radius: 50px; font-size: 1.1rem; font-weight: bold;
-            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            min-width: 150px;
+            background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border: none;
+            padding: 15px 30px; margin: 10px; border-radius: 50px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(0,114,255,0.4);
+            min-width: 140px; text-transform: uppercase; letter-spacing: 1px;
         }
-        .grid-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .grid-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,114,255,0.6); }
         .grid-btn:active { transform: scale(0.95); }
 
-        /* HUD (Marcador en juego) */
+        /* HUD */
         .hud {
-            position: absolute; top: 0; left: 0; width: 100%;
-            padding: 15px;
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px;
             display: flex; justify-content: space-between; align-items: flex-start;
-            z-index: 20;
-            pointer-events: none; /* Dejar pasar clicks al botón de salir */
+            z-index: 20; pointer-events: none;
         }
-        
         .player-card {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 10px 20px;
-            border-radius: 15px;
-            border: 2px solid transparent;
-            transition: all 0.3s;
+            background: rgba(20, 20, 20, 0.8); padding: 10px 20px; border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-width: 120px;
         }
-        
         .player-card.active {
-            border-color: #00FF00;
-            background: rgba(0, 50, 0, 0.7);
-            transform: scale(1.1);
-            box-shadow: 0 0 15px #00FF00;
+            border-color: #00FF00; background: rgba(0, 50, 0, 0.8);
+            transform: scale(1.15); box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
         }
-
         .timer-box {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px;
-            font-size: 1.5rem; font-weight: bold; font-family: monospace;
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 20px;
+            font-size: 1.5rem; font-weight: bold; font-family: monospace; border: 1px solid #555;
         }
 
-        /* TABLA DE RESUMEN */
+        /* TABLA */
         .summary-table {
-            width: 100%; max-width: 500px;
-            border-collapse: collapse;
-            margin: 20px 0;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
+            width: 100%; max-width: 500px; border-collapse: collapse; margin: 20px 0;
+            background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden;
         }
-        .summary-table th, .summary-table td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-        }
-        .summary-table th { background: rgba(0, 0, 0, 0.3); color: #FFD700; }
-        .winner-text { color: #00FF00; font-weight: bold; font-size: 1.2rem; margin-top: 10px; }
-
+        .summary-table th, .summary-table td { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .summary-table th { background: rgba(0, 114, 255, 0.3); color: white; }
+        
         .back-btn {
             position: absolute; bottom: 20px; right: 20px; z-index: 25;
-            background: rgba(255, 50, 50, 0.8); color: white;
-            padding: 10px 20px; border-radius: 20px;
-            border: none; font-weight: bold; cursor: pointer; display: none;
-            pointer-events: auto;
+            background: rgba(255, 50, 50, 0.9); color: white; padding: 12px 25px; border-radius: 30px;
+            border: none; font-weight: bold; cursor: pointer; display: none; pointer-events: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .back-btn.show { display: block; }
     </style>
@@ -142,22 +97,19 @@
 <body>
 
     <div class="container">
-        
         <div id="menuScreen" class="menu">
-            <h1>👥 Memorama VS</h1>
-            
+            <h1>👥 Memorama Pro</h1>
             <div class="login-container">
                 <div class="input-group">
                     <label>Jugador 1</label>
-                    <input type="text" id="p1Input" class="login-input" placeholder="Nombre J1" value="Jugador 1">
+                    <input type="text" id="p1Input" class="login-input" placeholder="Nombre" value="Jugador 1">
                 </div>
                 <div class="input-group">
                     <label>Jugador 2</label>
-                    <input type="text" id="p2Input" class="login-input" placeholder="Nombre J2" value="Jugador 2">
+                    <input type="text" id="p2Input" class="login-input" placeholder="Nombre" value="Jugador 2">
                 </div>
             </div>
-
-            <p style="margin-bottom: 15px; opacity: 0.8;">Elige Categoría para Empezar:</p>
+            <p style="margin-bottom:15px; color:#ccc;">Selecciona Categoría:</p>
             <div>
                 <button class="grid-btn" onclick="startGame('animals')">🐶 Animales</button>
                 <button class="grid-btn" onclick="startGame('fruits')">🍎 Frutas</button>
@@ -167,17 +119,15 @@
 
         <div id="gameHUD" class="hud hidden">
             <div id="p1Card" class="player-card active">
-                <div id="p1NameDisplay" style="font-weight:bold;">Jugador 1</div>
-                <div>Pares: <span id="p1Score">0</span></div>
-                <div style="font-size:0.8rem; color:#ffaaaa;">Errores: <span id="p1Errors">0</span></div>
+                <div id="p1NameDisplay" style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">J1</div>
+                <div style="color:#00e5ff;">⭐ <span id="p1Score">0</span></div>
+                <div style="font-size:0.8rem; color:#ff6666;">❌ <span id="p1Errors">0</span></div>
             </div>
-
             <div class="timer-box" id="timerDisplay">00:00</div>
-
             <div id="p2Card" class="player-card">
-                <div id="p2NameDisplay" style="font-weight:bold;">Jugador 2</div>
-                <div>Pares: <span id="p2Score">0</span></div>
-                <div style="font-size:0.8rem; color:#ffaaaa;">Errores: <span id="p2Errors">0</span></div>
+                <div id="p2NameDisplay" style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">J2</div>
+                <div style="color:#00e5ff;">⭐ <span id="p2Score">0</span></div>
+                <div style="font-size:0.8rem; color:#ff6666;">❌ <span id="p2Errors">0</span></div>
             </div>
         </div>
 
@@ -186,41 +136,24 @@
         </div>
 
         <div id="victoryScreen" class="victory hidden">
-            <h1>📊 Resumen de Partida</h1>
+            <h1 style="margin-bottom:0;">¡Juego Terminado!</h1>
+            <p id="winnerText" style="font-size:1.5rem; color:#00FF00; margin-bottom:20px;">Ganador</p>
             
             <table class="summary-table">
-                <thead>
-                    <tr>
-                        <th>Jugador</th>
-                        <th>Pares</th>
-                        <th>Errores</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Jugador</th><th>Pares</th><th>Errores</th></tr></thead>
                 <tbody>
-                    <tr>
-                        <td id="sumP1Name">J1</td>
-                        <td id="sumP1Score">0</td>
-                        <td id="sumP1Errors" style="color:#ff6666">0</td>
-                    </tr>
-                    <tr>
-                        <td id="sumP2Name">J2</td>
-                        <td id="sumP2Score">0</td>
-                        <td id="sumP2Errors" style="color:#ff6666">0</td>
-                    </tr>
+                    <tr><td id="sumP1Name">J1</td><td id="sumP1Score">0</td><td id="sumP1Errors">0</td></tr>
+                    <tr><td id="sumP2Name">J2</td><td id="sumP2Score">0</td><td id="sumP2Errors">0</td></tr>
                 </tbody>
             </table>
-
-            <div style="margin-bottom: 20px;">
-                <p>Tiempo Total: <span id="sumTime" style="font-weight:bold; font-size:1.2rem;">00:00</span></p>
-                <p id="winnerText" class="winner-text">¡Ganador: Nadie!</p>
+            <p>Tiempo: <span id="sumTime" style="font-weight:bold;">00:00</span></p>
+            <div style="margin-top:20px;">
+                <button class="grid-btn" onclick="resetGame()">🔄 Reintentar</button>
+                <button class="grid-btn" onclick="backToMenu()">🏠 Menú</button>
             </div>
-
-            <button class="grid-btn" onclick="resetGame()">🔄 Nueva Partida</button>
-            <button class="grid-btn" onclick="backToMenu()">🏠 Menú Principal</button>
         </div>
 
         <button id="backBtn" class="back-btn" onclick="backToMenu()">❌ Salir</button>
-        
         <video id="input_video" playsinline></video>
         <canvas id="output_canvas"></canvas>
     </div>
@@ -249,7 +182,6 @@
             ]
         };
 
-        // --- ESTADO DEL JUEGO ---
         let cards = [];
         let flippedCards = [];
         let lockBoard = false;
@@ -257,23 +189,58 @@
         let totalPairs = 0;
         let particles = [];
         let gameActive = false;
-        
-        // Multiplayer State
-        let players = [
-            { name: "J1", score: 0, errors: 0 },
-            { name: "J2", score: 0, errors: 0 }
-        ];
-        let currentPlayerIndex = 0; // 0 o 1
-        
-        // Timer State
+        let players = [{ name: "J1", score: 0, errors: 0 }, { name: "J2", score: 0, errors: 0 }];
+        let currentPlayerIndex = 0;
         let startTime = 0;
         let timerInterval = null;
-
-        // Input
         let wasPinching = false; 
         let pinchCooldown = 0;   
+
+        // --- SISTEMA DE SONIDO (Web Audio API) ---
+        // Genera sonidos sin archivos externos
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        // --- AUDIO ---
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+
+            if (type === 'flip') {
+                // Sonido "Pop"
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'match') {
+                // Sonido "Ding"
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.setValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'error') {
+                // Sonido "Buzz"
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
         function speak(text) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -284,7 +251,7 @@
             }
         }
 
-        // --- GESTIÓN DE PANTALLA ---
+        // --- DISPLAY ---
         function resizeCanvas() {
             canvasElement.width = window.innerWidth;
             canvasElement.height = window.innerHeight;
@@ -293,20 +260,14 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // --- LÓGICA DE JUEGO ---
+        // --- GAME LOGIC ---
         function startGame(category) {
-            // Obtener nombres de los inputs
             const name1 = document.getElementById('p1Input').value.trim() || "Jugador 1";
             const name2 = document.getElementById('p2Input').value.trim() || "Jugador 2";
             
-            // Inicializar jugadores
-            players = [
-                { name: name1, score: 0, errors: 0 },
-                { name: name2, score: 0, errors: 0 }
-            ];
-            currentPlayerIndex = 0; // Empieza jugador 1
+            players = [{ name: name1, score: 0, errors: 0 }, { name: name2, score: 0, errors: 0 }];
+            currentPlayerIndex = 0;
 
-            // UI Updates
             document.getElementById('menuScreen').classList.add('hidden');
             document.getElementById('victoryScreen').classList.add('hidden');
             document.getElementById('loadingMsg').classList.remove('hidden');
@@ -318,7 +279,6 @@
             if (!videoElement.srcObject) startCamera();
             else document.getElementById('loadingMsg').classList.add('hidden');
 
-            // Preparar Cartas
             const items = categories[category];
             let deck = [...items, ...items]; 
             deck.sort(() => Math.random() - 0.5);
@@ -336,13 +296,14 @@
                 isFlipped: false,
                 isMatched: false,
                 x: 0, y: 0, w: 0, h: 0,
-                scale: 1
+                scale: 1,
+                // Offset aleatorio para la animación de flotación
+                floatOffset: Math.random() * Math.PI * 2
             }));
 
             gameActive = true;
             createGrid();
             
-            // Iniciar Timer
             startTime = Date.now();
             if(timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateTimerDisplay, 1000);
@@ -351,7 +312,6 @@
         }
 
         function updateHUD() {
-            // Actualizar nombres y scores
             document.getElementById('p1NameDisplay').innerText = players[0].name;
             document.getElementById('p1Score').innerText = players[0].score;
             document.getElementById('p1Errors').innerText = players[0].errors;
@@ -360,7 +320,6 @@
             document.getElementById('p2Score').innerText = players[1].score;
             document.getElementById('p2Errors').innerText = players[1].errors;
 
-            // Resaltar jugador activo
             const p1Card = document.getElementById('p1Card');
             const p2Card = document.getElementById('p2Card');
 
@@ -381,34 +340,30 @@
         }
 
         function createGrid() {
-            // Dejar espacio arriba para el HUD
             const cols = window.innerWidth > window.innerHeight ? 4 : 3;
             const rows = Math.ceil(cards.length / cols);
-            
             const gap = 20; 
             const marginX = window.innerWidth * 0.1; 
-            const marginY = window.innerHeight * 0.25; // Más margen arriba para el HUD
+            const marginY = window.innerHeight * 0.25; 
             
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
             const availableH = window.innerHeight - (marginY * 2) - (gap * (rows - 1));
-            
             const cardSize = Math.min(availableW / cols, availableH / rows);
 
             cards.forEach((card, i) => {
                 const col = i % cols;
                 const row = Math.floor(i / cols);
-                
                 card.w = cardSize;
                 card.h = cardSize;
-                card.x = marginX + col * (cardSize + gap);
-                card.y = marginY + row * (cardSize + gap);
+                card.baseX = marginX + col * (cardSize + gap); // Guardamos base X/Y
+                card.baseY = marginY + row * (cardSize + gap);
+                card.x = card.baseX;
+                card.y = card.baseY;
             });
         }
 
         function handleCardInteraction(cursorX, cursorY) {
             if (lockBoard) return;
-            
-            // Invertir X por el espejo
             const pixelX = (1 - cursorX) * canvasElement.width; 
             const pixelY = cursorY * canvasElement.height;
 
@@ -424,6 +379,7 @@
         }
 
         function flipCard(card) {
+            playSound('flip'); // SFX
             card.isFlipped = true;
             flippedCards.push(card);
             card.scale = 1.15; 
@@ -438,41 +394,35 @@
             const [card1, card2] = flippedCards;
 
             if (card1.emoji === card2.emoji) {
-                // --- ACIERTO (MATCH) ---
-                players[currentPlayerIndex].score++; // Sumar punto
+                // MATCH
+                playSound('match'); // SFX
+                players[currentPlayerIndex].score++;
                 matchesFound++;
-                
                 card1.isMatched = true;
                 card2.isMatched = true;
                 
                 createExplosion(card1.x + card1.w/2, card1.y + card1.h/2);
                 createExplosion(card2.x + card2.w/2, card2.y + card2.h/2);
                 
-                speak("¡" + card1.name + "! Punto para " + players[currentPlayerIndex].name);
-                
-                updateHUD(); // Actualizar marcador
-                resetBoard(); // El jugador MANTIENE el turno si acierta
+                speak("¡" + card1.name + "!");
+                updateHUD();
+                resetBoard();
 
-                if (matchesFound === totalPairs) {
-                    endGame();
-                }
+                if (matchesFound === totalPairs) endGame();
             } else {
-                // --- ERROR (NO MATCH) ---
-                players[currentPlayerIndex].errors++; // Sumar error
-                updateHUD(); // Mostrar error inmediatamente
+                // ERROR
+                playSound('error'); // SFX
+                players[currentPlayerIndex].errors++;
+                updateHUD();
 
-                // Cambio de turno
                 setTimeout(() => {
                     card1.isFlipped = false;
                     card2.isFlipped = false;
-                    
-                    // Cambiar jugador
                     currentPlayerIndex = (currentPlayerIndex + 1) % 2;
                     updateHUD();
                     speak("Turno de " + players[currentPlayerIndex].name);
-                    
                     resetBoard();
-                }, 1500); // 1.5 segundos para ver el error
+                }, 1500);
             }
         }
 
@@ -488,18 +438,14 @@
                 document.getElementById('victoryScreen').classList.remove('hidden');
                 document.getElementById('gameHUD').classList.add('hidden');
                 
-                // Llenar tabla de resumen
                 document.getElementById('sumP1Name').innerText = players[0].name;
                 document.getElementById('sumP1Score').innerText = players[0].score;
                 document.getElementById('sumP1Errors').innerText = players[0].errors;
-
                 document.getElementById('sumP2Name').innerText = players[1].name;
                 document.getElementById('sumP2Score').innerText = players[1].score;
                 document.getElementById('sumP2Errors').innerText = players[1].errors;
-
                 document.getElementById('sumTime').innerText = totalTime;
 
-                // Determinar ganador
                 const winnerElem = document.getElementById('winnerText');
                 if (players[0].score > players[1].score) {
                     winnerElem.innerText = `🏆 ¡Ganador: ${players[0].name}!`;
@@ -508,20 +454,19 @@
                     winnerElem.innerText = `🏆 ¡Ganador: ${players[1].name}!`;
                     speak(`Felicidades ${players[1].name}, has ganado.`);
                 } else {
-                    winnerElem.innerText = "🤝 ¡Es un Empate!";
-                    speak("Es un empate. ¡Bien jugado ambos!");
+                    winnerElem.innerText = "🤝 ¡Empate!";
+                    speak("Es un empate.");
                 }
-
             }, 1000);
         }
 
-        // --- VISUALES ---
+        // --- FX ---
         function createExplosion(x, y) {
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 40; i++) {
                 particles.push({
                     x: x, y: y,
-                    vx: (Math.random() - 0.5) * 12,
-                    vy: (Math.random() - 0.5) * 12,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
                     life: 1.0,
                     color: `hsl(${Math.random()*360}, 100%, 70%)`
                 });
@@ -533,7 +478,7 @@
                 let p = particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
-                p.life -= 0.04;
+                p.life -= 0.03;
                 if (p.life <= 0) particles.splice(i, 1);
                 else {
                     ctx.globalAlpha = p.life;
@@ -546,6 +491,7 @@
             ctx.globalAlpha = 1.0;
         }
 
+        // --- RENDER LOOP ---
         function onResults(results) {
             if (!gameActive) return;
             document.getElementById('loadingMsg').classList.add('hidden');
@@ -554,11 +500,19 @@
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-            // Espejo para UI AR
+            // Preparar Espejo
             ctx.translate(canvasElement.width, 0);
             ctx.scale(-1, 1);
 
+            // Tiempo actual para animación
+            const time = Date.now() * 0.002;
+
             cards.forEach(card => {
+                // ANIMACIÓN FLOTANTE (IDLE)
+                // Calculamos una pequeña variación en Y usando Seno
+                const floatY = Math.sin(time + card.floatOffset) * 5; 
+                card.y = card.baseY + floatY;
+
                 if (card.scale > 1) card.scale -= 0.02;
 
                 const cx = card.x + card.w/2;
@@ -568,7 +522,7 @@
                 ctx.scale(card.scale, card.scale);
                 ctx.translate(-cx, -cy);
 
-                // Estilo Cristal
+                // Dibujar Carta Cristal
                 ctx.beginPath();
                 ctx.roundRect(card.x, card.y, card.w, card.h, 15);
                 
@@ -584,10 +538,10 @@
                     ctx.fillStyle = "black";
                     ctx.fillText(card.emoji, card.x + card.w/2, card.y + card.h/2);
                 } else {
-                    ctx.fillStyle = 'rgba(30, 50, 80, 0.5)'; 
+                    ctx.fillStyle = 'rgba(20, 40, 70, 0.5)'; 
                     ctx.fill();
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.lineWidth = 2;
                     ctx.stroke();
                     ctx.font = `${card.w * 0.4}px Arial`;
                     ctx.textAlign = "center";
@@ -607,8 +561,9 @@
             // Hand Tracking
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
-                    drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: 'rgba(0, 255, 0, 0.6)', lineWidth: 2});
-                    drawLandmarks(ctx, landmarks, {color: 'rgba(255, 0, 0, 0.6)', lineWidth: 1, radius: 3});
+                    // Dibujar esqueleto tenue
+                    drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: 'rgba(0, 255, 0, 0.4)', lineWidth: 2});
+                    drawLandmarks(ctx, landmarks, {color: 'rgba(255, 0, 0, 0.4)', lineWidth: 1, radius: 3});
 
                     const indexTip = landmarks[8];
                     const thumbTip = landmarks[4];
@@ -620,13 +575,22 @@
                     const cursorX = (1 - cx) * canvasElement.width; 
                     const cursorY = cy * canvasElement.height;
                     
+                    // Cursor más estilizado
                     ctx.beginPath();
-                    ctx.arc(cursorX, cursorY, 12, 0, Math.PI*2);
-                    ctx.fillStyle = isPinching ? 'rgba(0, 255, 0, 0.8)' : 'rgba(255, 255, 255, 0.4)';
+                    ctx.arc(cursorX, cursorY, 15, 0, Math.PI*2);
+                    ctx.fillStyle = isPinching ? 'rgba(0, 255, 0, 0.7)' : 'rgba(255, 255, 255, 0.3)';
                     ctx.fill();
-                    ctx.strokeStyle = 'white';
+                    ctx.strokeStyle = isPinching ? '#00FF00' : '#FFFFFF';
                     ctx.lineWidth = 2;
                     ctx.stroke();
+
+                    // Anillo de carga si no pincha
+                    if (!isPinching) {
+                        ctx.beginPath();
+                        ctx.arc(cursorX, cursorY, 20, 0, Math.PI*2);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                        ctx.stroke();
+                    }
 
                     if (isPinching && !wasPinching && Date.now() > pinchCooldown) {
                         handleCardInteraction(cx, cy); 
@@ -637,7 +601,6 @@
             }
         }
 
-        // --- INIT ---
         function resetGame() {
             document.getElementById('victoryScreen').classList.add('hidden');
             document.getElementById('menuScreen').classList.remove('hidden');
@@ -652,10 +615,7 @@
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({
-            maxNumHands: 1, 
-            modelComplexity: 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
+            maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
         });
         hands.onResults(onResults);
 
