@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Big Cards</title>
+    <title>Memorama AR - Balanced Size</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -51,7 +51,7 @@
         .grid-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,114,255,0.6); }
         .grid-btn:active { transform: scale(0.95); }
 
-        /* HUD Compacto para dejar espacio a las cartas */
+        /* HUD Compacto */
         .hud {
             position: absolute; top: 0; left: 0; width: 100%; padding: 10px;
             display: flex; justify-content: space-between; align-items: flex-start;
@@ -325,28 +325,29 @@
             document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
-        // --- AQUÍ ESTÁ EL CAMBIO CLAVE PARA TAMAÑO ---
+        // --- AJUSTE DE TAMAÑO EQUILIBRADO ---
         function createGrid() {
-            // Lógica responsiva para aprovechar el espacio
             const isPortrait = window.innerHeight > window.innerWidth;
-            const cols = isPortrait ? 3 : 4; // Menos columnas en vertical para que sean más anchas
+            const cols = isPortrait ? 3 : 4;
             const rows = Math.ceil(cards.length / cols);
             
-            // Márgenes mínimos para maximizar tamaño
             const isMobile = window.innerWidth < 600;
-            const marginX = isMobile ? 10 : window.innerWidth * 0.05; // Solo 10px en móvil
-            const marginYStart = isMobile ? 80 : window.innerHeight * 0.15; // Dejar espacio para el HUD arriba
-            const marginYEnd = 20; // Poco margen abajo
+
+            // Hemos aumentado estos valores respecto a la versión anterior
+            // para dar más aire y que las cartas se reduzcan un poco.
+            const marginX = isMobile ? window.innerWidth * 0.08 : window.innerWidth * 0.1; 
+            const marginYStart = isMobile ? 100 : window.innerHeight * 0.15; 
+            const marginYEnd = isMobile ? 50 : window.innerHeight * 0.1;
             
-            const gap = isMobile ? 10 : 20; // Espacio entre cartas reducido en móvil
+            // Gap un poco más grande que la versión "maximizada"
+            const gap = isMobile ? 15 : 25; 
             
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
             const availableH = window.innerHeight - marginYStart - marginYEnd - (gap * (rows - 1));
             
-            // Calculamos el tamaño y lo limitamos ligeramente para que no se deforme
             const cardSize = Math.min(availableW / cols, availableH / rows);
 
-            // Centrar horizontalmente si sobra espacio
+            // Centrado horizontal
             const totalGridW = (cardSize * cols) + (gap * (cols - 1));
             const startX = (window.innerWidth - totalGridW) / 2;
 
@@ -578,7 +579,6 @@
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({
-            // Lite mode para celular:
             maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
         });
         hands.onResults(onResults);
