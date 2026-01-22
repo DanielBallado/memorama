@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Memorama AR - Pro</title>
+    <title>Memorama AR - Big Cards</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -51,25 +51,25 @@
         .grid-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,114,255,0.6); }
         .grid-btn:active { transform: scale(0.95); }
 
-        /* HUD */
+        /* HUD Compacto para dejar espacio a las cartas */
         .hud {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 15px;
+            position: absolute; top: 0; left: 0; width: 100%; padding: 10px;
             display: flex; justify-content: space-between; align-items: flex-start;
             z-index: 20; pointer-events: none;
         }
         .player-card {
-            background: rgba(20, 20, 20, 0.8); padding: 10px 20px; border-radius: 15px;
+            background: rgba(20, 20, 20, 0.8); padding: 8px 15px; border-radius: 15px;
             border: 2px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            min-width: 120px;
+            min-width: 100px;
         }
         .player-card.active {
             border-color: #00FF00; background: rgba(0, 50, 0, 0.8);
-            transform: scale(1.15); box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+            transform: scale(1.1); box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
         }
         .timer-box {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 20px;
-            font-size: 1.5rem; font-weight: bold; font-family: monospace; border: 1px solid #555;
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px;
+            font-size: 1.2rem; font-weight: bold; font-family: monospace; border: 1px solid #555;
         }
 
         /* TABLA */
@@ -119,13 +119,13 @@
 
         <div id="gameHUD" class="hud hidden">
             <div id="p1Card" class="player-card active">
-                <div id="p1NameDisplay" style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">J1</div>
+                <div id="p1NameDisplay" style="font-weight:bold; font-size:1rem; margin-bottom:5px;">J1</div>
                 <div style="color:#00e5ff;">⭐ <span id="p1Score">0</span></div>
                 <div style="font-size:0.8rem; color:#ff6666;">❌ <span id="p1Errors">0</span></div>
             </div>
             <div class="timer-box" id="timerDisplay">00:00</div>
             <div id="p2Card" class="player-card">
-                <div id="p2NameDisplay" style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">J2</div>
+                <div id="p2NameDisplay" style="font-weight:bold; font-size:1rem; margin-bottom:5px;">J2</div>
                 <div style="color:#00e5ff;">⭐ <span id="p2Score">0</span></div>
                 <div style="font-size:0.8rem; color:#ff6666;">❌ <span id="p2Errors">0</span></div>
             </div>
@@ -197,22 +197,17 @@
         let pinchCooldown = 0;   
 
         // --- SISTEMA DE SONIDO (Web Audio API) ---
-        // Genera sonidos sin archivos externos
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-            
             osc.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            
             const now = audioCtx.currentTime;
 
             if (type === 'flip') {
-                // Sonido "Pop"
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(400, now);
                 osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
@@ -221,7 +216,6 @@
                 osc.start(now);
                 osc.stop(now + 0.1);
             } else if (type === 'match') {
-                // Sonido "Ding"
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(600, now);
                 osc.frequency.setValueAtTime(1200, now + 0.1);
@@ -230,7 +224,6 @@
                 osc.start(now);
                 osc.stop(now + 0.5);
             } else if (type === 'error') {
-                // Sonido "Buzz"
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.linearRampToValueAtTime(100, now + 0.3);
@@ -251,7 +244,6 @@
             }
         }
 
-        // --- DISPLAY ---
         function resizeCanvas() {
             canvasElement.width = window.innerWidth;
             canvasElement.height = window.innerHeight;
@@ -260,11 +252,9 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // --- GAME LOGIC ---
         function startGame(category) {
             const name1 = document.getElementById('p1Input').value.trim() || "Jugador 1";
             const name2 = document.getElementById('p2Input').value.trim() || "Jugador 2";
-            
             players = [{ name: name1, score: 0, errors: 0 }, { name: name2, score: 0, errors: 0 }];
             currentPlayerIndex = 0;
 
@@ -273,7 +263,6 @@
             document.getElementById('loadingMsg').classList.remove('hidden');
             document.getElementById('gameHUD').classList.remove('hidden');
             document.getElementById('backBtn').classList.add('show');
-
             updateHUD();
 
             if (!videoElement.srcObject) startCamera();
@@ -297,7 +286,6 @@
                 isMatched: false,
                 x: 0, y: 0, w: 0, h: 0,
                 scale: 1,
-                // Offset aleatorio para la animación de flotación
                 floatOffset: Math.random() * Math.PI * 2
             }));
 
@@ -315,14 +303,12 @@
             document.getElementById('p1NameDisplay').innerText = players[0].name;
             document.getElementById('p1Score').innerText = players[0].score;
             document.getElementById('p1Errors').innerText = players[0].errors;
-
             document.getElementById('p2NameDisplay').innerText = players[1].name;
             document.getElementById('p2Score').innerText = players[1].score;
             document.getElementById('p2Errors').innerText = players[1].errors;
 
             const p1Card = document.getElementById('p1Card');
             const p2Card = document.getElementById('p2Card');
-
             if (currentPlayerIndex === 0) {
                 p1Card.classList.add('active');
                 p2Card.classList.remove('active');
@@ -339,24 +325,38 @@
             document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
+        // --- AQUÍ ESTÁ EL CAMBIO CLAVE PARA TAMAÑO ---
         function createGrid() {
-            const cols = window.innerWidth > window.innerHeight ? 4 : 3;
+            // Lógica responsiva para aprovechar el espacio
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const cols = isPortrait ? 3 : 4; // Menos columnas en vertical para que sean más anchas
             const rows = Math.ceil(cards.length / cols);
-            const gap = 20; 
-            const marginX = window.innerWidth * 0.1; 
-            const marginY = window.innerHeight * 0.25; 
+            
+            // Márgenes mínimos para maximizar tamaño
+            const isMobile = window.innerWidth < 600;
+            const marginX = isMobile ? 10 : window.innerWidth * 0.05; // Solo 10px en móvil
+            const marginYStart = isMobile ? 80 : window.innerHeight * 0.15; // Dejar espacio para el HUD arriba
+            const marginYEnd = 20; // Poco margen abajo
+            
+            const gap = isMobile ? 10 : 20; // Espacio entre cartas reducido en móvil
             
             const availableW = window.innerWidth - (marginX * 2) - (gap * (cols - 1));
-            const availableH = window.innerHeight - (marginY * 2) - (gap * (rows - 1));
+            const availableH = window.innerHeight - marginYStart - marginYEnd - (gap * (rows - 1));
+            
+            // Calculamos el tamaño y lo limitamos ligeramente para que no se deforme
             const cardSize = Math.min(availableW / cols, availableH / rows);
+
+            // Centrar horizontalmente si sobra espacio
+            const totalGridW = (cardSize * cols) + (gap * (cols - 1));
+            const startX = (window.innerWidth - totalGridW) / 2;
 
             cards.forEach((card, i) => {
                 const col = i % cols;
                 const row = Math.floor(i / cols);
                 card.w = cardSize;
                 card.h = cardSize;
-                card.baseX = marginX + col * (cardSize + gap); // Guardamos base X/Y
-                card.baseY = marginY + row * (cardSize + gap);
+                card.baseX = startX + col * (cardSize + gap);
+                card.baseY = marginYStart + row * (cardSize + gap);
                 card.x = card.baseX;
                 card.y = card.baseY;
             });
@@ -366,7 +366,6 @@
             if (lockBoard) return;
             const pixelX = (1 - cursorX) * canvasElement.width; 
             const pixelY = cursorY * canvasElement.height;
-
             for (let card of cards) {
                 if (!card.isFlipped && !card.isMatched) {
                     if (pixelX > card.x && pixelX < card.x + card.w &&
@@ -379,42 +378,32 @@
         }
 
         function flipCard(card) {
-            playSound('flip'); // SFX
+            playSound('flip');
             card.isFlipped = true;
             flippedCards.push(card);
             card.scale = 1.15; 
-
-            if (flippedCards.length === 2) {
-                checkForMatch();
-            }
+            if (flippedCards.length === 2) checkForMatch();
         }
 
         function checkForMatch() {
             lockBoard = true;
             const [card1, card2] = flippedCards;
-
             if (card1.emoji === card2.emoji) {
-                // MATCH
-                playSound('match'); // SFX
+                playSound('match');
                 players[currentPlayerIndex].score++;
                 matchesFound++;
                 card1.isMatched = true;
                 card2.isMatched = true;
-                
                 createExplosion(card1.x + card1.w/2, card1.y + card1.h/2);
                 createExplosion(card2.x + card2.w/2, card2.y + card2.h/2);
-                
                 speak("¡" + card1.name + "!");
                 updateHUD();
                 resetBoard();
-
                 if (matchesFound === totalPairs) endGame();
             } else {
-                // ERROR
-                playSound('error'); // SFX
+                playSound('error');
                 players[currentPlayerIndex].errors++;
                 updateHUD();
-
                 setTimeout(() => {
                     card1.isFlipped = false;
                     card2.isFlipped = false;
@@ -433,11 +422,9 @@
         function endGame() {
             clearInterval(timerInterval);
             const totalTime = document.getElementById('timerDisplay').innerText;
-            
             setTimeout(() => {
                 document.getElementById('victoryScreen').classList.remove('hidden');
                 document.getElementById('gameHUD').classList.add('hidden');
-                
                 document.getElementById('sumP1Name').innerText = players[0].name;
                 document.getElementById('sumP1Score').innerText = players[0].score;
                 document.getElementById('sumP1Errors').innerText = players[0].errors;
@@ -445,7 +432,6 @@
                 document.getElementById('sumP2Score').innerText = players[1].score;
                 document.getElementById('sumP2Errors').innerText = players[1].errors;
                 document.getElementById('sumTime').innerText = totalTime;
-
                 const winnerElem = document.getElementById('winnerText');
                 if (players[0].score > players[1].score) {
                     winnerElem.innerText = `🏆 ¡Ganador: ${players[0].name}!`;
@@ -460,7 +446,6 @@
             }, 1000);
         }
 
-        // --- FX ---
         function createExplosion(x, y) {
             for (let i = 0; i < 40; i++) {
                 particles.push({
@@ -491,41 +476,27 @@
             ctx.globalAlpha = 1.0;
         }
 
-        // --- RENDER LOOP ---
         function onResults(results) {
             if (!gameActive) return;
             document.getElementById('loadingMsg').classList.add('hidden');
-
             ctx.save();
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-
-            // Preparar Espejo
             ctx.translate(canvasElement.width, 0);
             ctx.scale(-1, 1);
-
-            // Tiempo actual para animación
             const time = Date.now() * 0.002;
 
             cards.forEach(card => {
-                // ANIMACIÓN FLOTANTE (IDLE)
-                // Calculamos una pequeña variación en Y usando Seno
                 const floatY = Math.sin(time + card.floatOffset) * 5; 
                 card.y = card.baseY + floatY;
-
                 if (card.scale > 1) card.scale -= 0.02;
-
                 const cx = card.x + card.w/2;
                 const cy = card.y + card.h/2;
-                
                 ctx.translate(cx, cy);
                 ctx.scale(card.scale, card.scale);
                 ctx.translate(-cx, -cy);
-
-                // Dibujar Carta Cristal
                 ctx.beginPath();
                 ctx.roundRect(card.x, card.y, card.w, card.h, 15);
-                
                 if (card.isFlipped || card.isMatched) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
                     ctx.fill();
@@ -549,33 +520,26 @@
                     ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
                     ctx.fillText("?", card.x + card.w/2, card.y + card.h/2);
                 }
-                
                 ctx.setTransform(1, 0, 0, 1, 0, 0); 
                 ctx.translate(canvasElement.width, 0);
                 ctx.scale(-1, 1);
             });
-
             drawParticles();
             ctx.restore(); 
 
-            // Hand Tracking
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
-                    // Dibujar esqueleto tenue
                     drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: 'rgba(0, 255, 0, 0.4)', lineWidth: 2});
                     drawLandmarks(ctx, landmarks, {color: 'rgba(255, 0, 0, 0.4)', lineWidth: 1, radius: 3});
-
                     const indexTip = landmarks[8];
                     const thumbTip = landmarks[4];
                     const distance = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
                     const isPinching = distance < 0.08;
-                    
                     const cx = (indexTip.x + thumbTip.x) / 2;
                     const cy = (indexTip.y + thumbTip.y) / 2;
                     const cursorX = (1 - cx) * canvasElement.width; 
                     const cursorY = cy * canvasElement.height;
                     
-                    // Cursor más estilizado
                     ctx.beginPath();
                     ctx.arc(cursorX, cursorY, 15, 0, Math.PI*2);
                     ctx.fillStyle = isPinching ? 'rgba(0, 255, 0, 0.7)' : 'rgba(255, 255, 255, 0.3)';
@@ -584,7 +548,6 @@
                     ctx.lineWidth = 2;
                     ctx.stroke();
 
-                    // Anillo de carga si no pincha
                     if (!isPinching) {
                         ctx.beginPath();
                         ctx.arc(cursorX, cursorY, 20, 0, Math.PI*2);
@@ -615,7 +578,8 @@
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({
-            maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
+            // Lite mode para celular:
+            maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
         });
         hands.onResults(onResults);
 
